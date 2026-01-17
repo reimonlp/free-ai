@@ -7,17 +7,17 @@ export class GeminiService implements AIService {
     async *chat(messages: ChatMessage[]) {
         if (!this.apiKey) throw new Error("GEMINI_API_KEY is missing");
 
-        // Usando el endpoint compatible con OpenAI de Google
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`, {
+        // Usando Gemini API nativa con streaming
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${this.apiKey}`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${this.apiKey}`,
             },
             body: JSON.stringify({
-                model: "gemini-1.5-flash",
-                messages,
-                stream: true,
+                contents: messages.map(m => ({
+                    role: m.role === "assistant" ? "model" : m.role === "system" ? "user" : m.role,
+                    parts: [{ text: m.content }]
+                })),
             }),
         });
 
@@ -48,8 +48,9 @@ export class GeminiService implements AIService {
 
                     try {
                         const json = JSON.parse(content);
-                        const delta = json.choices[0]?.delta?.content;
-                        if (delta) yield delta;
+                        // Gemini native format: candidates[0].content.parts[0].text
+                        const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if (text) yield text;
                     } catch (e) {
                         // Ignorar fragmentos incompletos
                     }

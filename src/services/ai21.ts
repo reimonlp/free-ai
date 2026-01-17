@@ -1,20 +1,20 @@
 import type { AIService, ChatMessage } from "../types";
 
-export class GroqService implements AIService {
-    name = "Groq";
-    private apiKey = process.env.GROQ_API_KEY;
+export class AI21Service implements AIService {
+    name = "AI21";
+    private apiKey = process.env.AI21_API_KEY;
 
     async *chat(messages: ChatMessage[]) {
-        if (!this.apiKey) throw new Error("GROQ_API_KEY is missing");
+        if (!this.apiKey) throw new Error("AI21_API_KEY is missing");
 
-        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        const response = await fetch("https://api.ai21.com/studio/v1/chat/completions", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${this.apiKey}`,
             },
             body: JSON.stringify({
-                model: "llama-3.3-70b-versatile",
+                model: "jamba-large",
                 messages,
                 stream: true,
             }),
@@ -22,7 +22,7 @@ export class GroqService implements AIService {
 
         if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`Groq API error: ${response.statusText} - ${errorText}`);
+            throw new Error(`AI21 API error: ${response.statusText} - ${errorText}`);
         }
 
         const reader = response.body?.getReader();
@@ -40,16 +40,17 @@ export class GroqService implements AIService {
             buffer = lines.pop() || "";
 
             for (const line of lines) {
+                if (line.trim() === "") continue;
                 if (line.startsWith("data: ")) {
-                    const content = line.slice(6);
+                    const content = line.slice(6).trim();
                     if (content === "[DONE]") return;
 
                     try {
                         const json = JSON.parse(content);
-                        const delta = json.choices[0]?.delta?.content;
+                        const delta = json.choices?.[0]?.delta?.content;
                         if (delta) yield delta;
                     } catch (e) {
-                        // Ignorar errores de parseo en fragmentos incompletos
+                        // Ignorar
                     }
                 }
             }

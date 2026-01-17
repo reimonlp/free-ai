@@ -1,20 +1,22 @@
 import type { AIService, ChatMessage } from "../types";
 
-export class DeepSeekService implements AIService {
-    name = "DeepSeek";
-    private apiKey = process.env.DEEPSEEK_API_KEY;
+export class OpenRouterService implements AIService {
+    name = "OpenRouter";
+    private apiKey = process.env.OPENROUTER_API_KEY;
 
     async *chat(messages: ChatMessage[]) {
-        if (!this.apiKey) throw new Error("DEEPSEEK_API_KEY is missing");
+        if (!this.apiKey) throw new Error("OPENROUTER_API_KEY is missing");
 
-        const response = await fetch("https://api.deepseek.com/chat/completions", {
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${this.apiKey}`,
+                "HTTP-Referer": "https://free-ai-proxy.local",
+                "X-Title": "Free AI Proxy",
             },
             body: JSON.stringify({
-                model: "deepseek-chat",
+                model: "meta-llama/llama-3.3-70b-instruct:free",
                 messages,
                 stream: true,
             }),
@@ -22,7 +24,7 @@ export class DeepSeekService implements AIService {
 
         if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`DeepSeek API error: ${response.statusText} - ${errorText}`);
+            throw new Error(`OpenRouter API error: ${response.statusText} - ${errorText}`);
         }
 
         const reader = response.body?.getReader();
@@ -47,10 +49,10 @@ export class DeepSeekService implements AIService {
 
                     try {
                         const json = JSON.parse(content);
-                        const delta = json.choices[0]?.delta?.content;
+                        const delta = json.choices?.[0]?.delta?.content;
                         if (delta) yield delta;
                     } catch (e) {
-                        // Ignorar
+                        // Ignorar fragmentos incompletos
                     }
                 }
             }

@@ -20,7 +20,10 @@ export class CerebrasService implements AIService {
             }),
         });
 
-        if (!response.ok) throw new Error(`Cerebras API error: ${response.statusText}`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Cerebras API error: ${response.statusText} - ${errorText}`);
+        }
 
         const reader = response.body?.getReader();
         if (!reader) return;

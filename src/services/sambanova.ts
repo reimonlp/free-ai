@@ -14,13 +14,16 @@ export class SambaNovaService implements AIService {
                 Authorization: `Bearer ${this.apiKey}`,
             },
             body: JSON.stringify({
-                model: "Meta-Llama-3.1-405B-Instruct",
+                model: "Meta-Llama-3.3-70B-Instruct",
                 messages,
                 stream: true,
             }),
         });
 
-        if (!response.ok) throw new Error(`SambaNova API error: ${response.statusText}`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`SambaNova API error: ${response.statusText} - ${errorText}`);
+        }
 
         const reader = response.body?.getReader();
         if (!reader) return;
