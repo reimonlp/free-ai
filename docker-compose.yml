@@ -1,0 +1,9 @@
+services:
+  free-ai:
+    build: .
+    container_name: free-ai-proxy
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    restart: always
